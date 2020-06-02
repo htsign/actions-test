@@ -17,4 +17,8 @@ jobs:
             const files = await promisify(fs.readdir)('.');
             console.log(files);
 
-            console.log({ github, context });
+            const { commits, head_commit } = context.payload;
+            console.log({ context, head_commit });
+            for (const commit of commits) {
+              console.log(commit);
+            }
