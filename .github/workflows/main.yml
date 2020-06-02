@@ -17,15 +17,22 @@ jobs:
             const files = await promisify(fs.readdir)('.');
             console.log(files);
 
-            const { commits, head_commit } = context.payload;
+            const { commits, pull_request, head_commit, compare } = context.payload;
             console.log({ context, head_commit });
-            for (const commit of commits) {
-              console.log(commit);
+
+            switch (context.eventName) {
+              case 'push':
+                console.log(commits);
+                break;
+              case 'pull_request':
+                console.log(pull_request);
+                break;
             }
 
-            const [, base, head] = context.payload.compare.match(/\/compare\/([0-9a-f]+)\.\.\.([0-9a-f]+)$/);
+            const [, base, head] = compare.match(/\/compare\/([0-9a-f]+)\.\.\.([0-9a-f]+)$/);
             if (base && head) {
               const { owner, repo } = context.repo;
-              const diffs = await github.repos.compareCommits({ owner, repo, base, head });
-              console.log({ diffs });
+              const { data } = await github.repos.compareCommits({ owner, repo, base, head });
+              const files = data.files.map(file => file.filename);
+              console.log(files);
             }
