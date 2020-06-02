@@ -6,6 +6,7 @@ jobs:
   debug:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: debug
         uses: actions/github-script@v1
         with:
@@ -18,18 +19,18 @@ jobs:
             console.log(files);
 
             const { commits, pull_request, head_commit, compare } = context.payload;
-            console.log({ context, head_commit });
+            const [base, head] = (() => {
+                switch (context.eventName) {
+                  case 'push': {
+                    const [, base, head] = compare.match(/\/compare\/([0-9a-f]+)\.\.\.([0-9a-f]+)$/);
+                    return [base, head];
+                  }
+                  case 'pull_request': {
+                    return [pull_request.base.sha, pull_request.head.sha];
+                  }
+                }
+            })();
 
-            switch (context.eventName) {
-              case 'push':
-                console.log(commits);
-                break;
-              case 'pull_request':
-                console.log(pull_request);
-                break;
-            }
-
-            const [, base, head] = compare.match(/\/compare\/([0-9a-f]+)\.\.\.([0-9a-f]+)$/);
             if (base && head) {
               const { owner, repo } = context.repo;
               const { data } = await github.repos.compareCommits({ owner, repo, base, head });
