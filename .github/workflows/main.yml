@@ -4,15 +4,36 @@ on: [push, pull_request]
 
 jobs:
   debug:
-    - name: debug
-      uses: actions/github-script@v1
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const fs = require('fs');
-          const { promisify } = require('util');
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: debug
+        uses: actions/github-script@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const { promisify } = require('util');
 
-          const files = await promisify(fs.readdir)('.');
-          console.log(files);
+            const files = await promisify(fs.readdir)('.');
+            console.log(files);
 
-          console.log({ github, context });
+            const { commits, pull_request, head_commit, compare } = context.payload;
+            const [base, head] = (() => {
+                switch (context.eventName) {
+                  case 'push': {
+                    const [, base, head] = compare.match(/\/compare\/([0-9a-f]+)\.\.\.([0-9a-f]+)$/);
+                    return [base, head];
+                  }
+                  case 'pull_request': {
+                    return [pull_request.base.sha, pull_request.head.sha];
+                  }
+                }
+            })();
+
+            if (base && head) {
+              const { owner, repo } = context.repo;
+              const { data } = await github.repos.compareCommits({ owner, repo, base, head });
+              const files = data.files.map(file => file.filename);
+              console.log(files);
+            }
