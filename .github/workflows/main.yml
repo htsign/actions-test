@@ -22,3 +22,10 @@ jobs:
             for (const commit of commits) {
               console.log(commit);
             }
+
+            const [, base, head] = context.payload.compare.match(/\/compare\/([0-9a-f]+)\.\.\.([0-9a-f]+)$/);
+            if (base && head) {
+              const { owner, repo } = context.repo;
+              const diffs = await github.repos.compareCommits({ owner, repo, base, head });
+              console.log({ diffs });
+            }
